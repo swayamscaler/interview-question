@@ -57,36 +57,17 @@ async function processQuestion(
 
 // Read questions from Supabase
 async function readQuestions(): Promise<ParsedRow[]> {
-  // Fetch total count first
-  const { count, error: countError } = await supabase
+  const { data, error } = await supabase
     .from('interviews')
-    .select('*', { count: 'exact', head: true });
+    .select('*')
+    .limit(1000);
 
-  if (countError) {
-    console.error("Error getting total count:", countError);
-    throw countError;
+  if (error) {
+    console.error("Error reading questions from Supabase:", error);
+    throw error;
   }
 
-  // Paginate through all records
-  const pageSize = 1000;
-  const totalPages = Math.ceil(count! / pageSize);
-  let allData: any[] = [];
-
-  for (let page = 0; page < totalPages; page++) {
-    const { data: pageData, error: pageError } = await supabase
-      .from('interviews')
-      .select('*')
-      .range(page * pageSize, (page + 1) * pageSize - 1);
-
-    if (pageError) {
-      console.error("Error reading questions from Supabase:", pageError);
-      throw pageError;
-    }
-
-    allData = allData.concat(pageData || []);
-  }
-
-  return allData
+  return (data || [])
     .filter(row => row && row.question_id !== null && row.question_id !== undefined)
     .map(row => ({
       'Question ID': row.question_id.toString(),

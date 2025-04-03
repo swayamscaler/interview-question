@@ -43,33 +43,14 @@ export async function GET(request: NextRequest): Promise<Response> {
       await processAllQuestions();
     }
 
-    // Fetch total count first
-    const { count, error: countError } = await supabase
+    const { data: questionsData, error: questionsError } = await supabase
       .from('interviews')
-      .select('*', { count: 'exact', head: true });
+      .select('*')
+      .limit(1000);
 
-    if (countError) {
-      console.error("Error getting total count:", countError);
+    if (questionsError) {
+      console.error("Error fetching questions:", questionsError);
       return NextResponse.json([], { status: 500 });
-    }
-
-    // Paginate through all records
-    const pageSize = 1000;
-    const totalPages = Math.ceil(count! / pageSize);
-    let questionsData: any[] = [];
-
-    for (let page = 0; page < totalPages; page++) {
-      const { data: pageData, error: pageError } = await supabase
-        .from('interviews')
-        .select('*')
-        .range(page * pageSize, (page + 1) * pageSize - 1);
-
-      if (pageError) {
-        console.error("Error fetching questions:", pageError);
-        return NextResponse.json([], { status: 500 });
-      }
-
-      questionsData = questionsData.concat(pageData || []);
     }
 
 
