@@ -1,8 +1,11 @@
-export interface WebsiteFeedback {
-  id: string
+export interface WebsiteFeedbackSubmission {
   suggestion: string
-  category: "bug" | "feature" | "improvement" | "other"
-  email?: string
+  rating: number
+  email: string
+}
+
+export interface WebsiteFeedback extends WebsiteFeedbackSubmission {
+  id: string
   timestamp: number
 }
 

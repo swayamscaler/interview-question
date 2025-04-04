@@ -3,28 +3,26 @@
 import { useState } from "react"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
 import { MessageSquarePlus } from "lucide-react"
-import type { WebsiteFeedback } from "@/lib/types"
+import type { WebsiteFeedbackSubmission } from "@/lib/types"
 
 interface FeedbackFormProps {
-  onSubmit: (feedback: WebsiteFeedback) => void
+  onSubmit: (feedback: WebsiteFeedbackSubmission) => void
   onClose: () => void
 }
 
 function FeedbackForm({ onSubmit, onClose }: FeedbackFormProps) {
   const [suggestion, setSuggestion] = useState("")
-  const [category, setCategory] = useState<WebsiteFeedback["category"]>("improvement")
+  const [rating, setRating] = useState(5)
   const [email, setEmail] = useState("")
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
-    if (!suggestion.trim()) return
+    if (!suggestion.trim() || !email.trim()) return
 
-    const feedback: WebsiteFeedback = {
-      id: Math.random().toString(36).substr(2, 9),
+    const feedback = {
       suggestion,
-      category,
-      email: email.trim() || undefined,
-      timestamp: Date.now()
+      rating,
+      email: email.trim()
     }
 
     onSubmit(feedback)
@@ -48,29 +46,31 @@ function FeedbackForm({ onSubmit, onClose }: FeedbackFormProps) {
 
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
-          Category
+          On a scale of 1-5, how useful did you find the feature?
         </label>
         <select
-          value={category}
-          onChange={(e) => setCategory(e.target.value as WebsiteFeedback["category"])}
+          value={rating}
+          onChange={(e) => setRating(Number(e.target.value))}
           className="w-full px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
-          <option value="bug">Bug Report</option>
-          <option value="feature">Feature Request</option>
-          <option value="improvement">Improvement</option>
-          <option value="other">Other</option>
+          <option value="5">5 - Extremely useful</option>
+          <option value="4">4 - Very useful</option>
+          <option value="3">3 - Moderately useful</option>
+          <option value="2">2 - Slightly useful</option>
+          <option value="1">1 - Not useful at all</option>
         </select>
       </div>
 
       <div>
         <label className="block text-sm font-medium text-gray-700 mb-1">
-          Email (optional)
+          Email
         </label>
         <input
           type="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          placeholder="Enter your email for follow-up"
+          placeholder="Enter your email"
+          required
           className="w-full px-3 py-2 border rounded-md text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
       </div>
@@ -97,9 +97,25 @@ function FeedbackForm({ onSubmit, onClose }: FeedbackFormProps) {
 export function FeedbackDialog() {
   const [open, setOpen] = useState(false)
   
-  const handleSubmit = (feedback: WebsiteFeedback) => {
-    // TODO: Send feedback to backend
-    console.log("Feedback submitted:", feedback)
+  const handleSubmit = async (feedback: WebsiteFeedbackSubmission) => {
+    try {
+      const response = await fetch("/api/feedback", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(feedback),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to submit feedback");
+      }
+
+      const data = await response.json();
+      console.log("Feedback saved:", data);
+    } catch (error) {
+      console.error("Error submitting feedback:", error);
+    }
   }
 
   return (
